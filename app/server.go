@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	// Uncomment this block to pass the first stage
 	"net"
@@ -48,15 +50,28 @@ func HandleRequest(conn net.Conn) {
 		return
 	}
 
-	if request.URL.Path != "" && request.URL.Path != "/" {
-		HandleConnWriting(conn, "HTTP/1.1 404 Not Found\r\n\r\n")
+	urlPath := request.URL.Path
+
+	if urlPath == "" || urlPath == "/" {
+		HandleConnWriting(conn, "HTTP/1.1 200 OK", "", "")
+		return
 	}
 
-	HandleConnWriting(conn, "HTTP/1.1 200 OK\r\n\r\n")
+	if strings.Contains(urlPath, "/echo/") {
+		splitUrlPath := strings.Split(urlPath, "/")
+		wildcard := splitUrlPath[len(splitUrlPath)-1]
+		if wildcard == "" {
+			HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+		}
+		wildcardLength := strconv.Itoa(len(wildcard))
+		HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
+	}
+
+	HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
 }
 
-func HandleConnWriting(conn net.Conn, response string) {
-	_, err := conn.Write([]byte(response))
+func HandleConnWriting(conn net.Conn, status, header, body string) {
+	_, err := conn.Write([]byte(fmt.Sprintf("%s\r\n%s\r\n%s", status, header, body)))
 	if err != nil {
 		fmt.Println("Error writing back to connection: ", err.Error())
 		os.Exit(1)
