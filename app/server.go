@@ -130,7 +130,7 @@ func HandleRequest(conn net.Conn) {
 						fmt.Println(writeErr.Error())
 					}
 
-					HandleConnWriting(conn, "HTTP/1.1 201 OK", "", "")
+					HandleConnWriting(conn, "HTTP/1.1 201 Created", "", "")
 				}
 			}
 		}
