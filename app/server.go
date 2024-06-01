@@ -35,13 +35,23 @@ func main() {
 		}
 	}(l)
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	for {
+		// Wait for a connection.
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+
+		// Handle the connection in a new goroutine.
+		// The loop then returns to accepting, so that
+		// multiple connections may be served concurrently.
+		go func(c net.Conn) {
+			HandleRequest(c)
+			_ = c.Close()
+		}(conn)
 	}
 
-	HandleRequest(conn)
 }
 
 func HandleRequest(conn net.Conn) {
