@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 
@@ -117,12 +118,16 @@ func HandleRequest(conn net.Conn) {
 					dir := os.Args[2]
 					splitUrlPath := strings.Split(urlPath, "/")
 					wildcard := splitUrlPath[len(splitUrlPath)-1]
+					_ = EnsureBaseDir(dir + wildcard)
 
 					buf := make([]byte, 1024)
 					_, _ = request.Body.Read(buf)
-					writeErr := os.WriteFile(dir+wildcard, buf, 0644)
+					r := strings.Split(string(buf), "\r\n")
+					content := strings.Trim(r[len(r)-1], "\x00")
+
+					writeErr := os.WriteFile(dir+wildcard, []byte(content), 0644)
 					if writeErr != nil {
-						HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+						fmt.Println(writeErr.Error())
 					}
 
 					HandleConnWriting(conn, "HTTP/1.1 201 OK", "", "")
@@ -130,6 +135,15 @@ func HandleRequest(conn net.Conn) {
 			}
 		}
 	}
+}
+
+func EnsureBaseDir(fpath string) error {
+	baseDir := path.Dir(fpath)
+	info, err := os.Stat(baseDir)
+	if err == nil && info.IsDir() {
+		return nil
+	}
+	return os.MkdirAll(baseDir, 0755)
 }
 
 func HandleConnWriting(conn net.Conn, status, header, body string) {
