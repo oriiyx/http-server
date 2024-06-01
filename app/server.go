@@ -67,6 +67,12 @@ func HandleRequest(conn net.Conn) {
 		HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
 	}
 
+	if strings.Contains(urlPath, "/user-agent") {
+		userAgent := request.Header.Get("User-Agent")
+		userAgentLength := strconv.Itoa(len(userAgent))
+		HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+userAgentLength+"\r\n", userAgent)
+	}
+
 	HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
 }
 
