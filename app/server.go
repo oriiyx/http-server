@@ -18,10 +18,18 @@ func main() {
 		fmt.Println("Failed to bind to port 4221")
 		os.Exit(1)
 	}
-	
-	_, err = l.Accept()
+
+	connection, err := l.Accept()
 	if err != nil {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
+
+	_, err = connection.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	if err != nil {
+		fmt.Println("Error writing back to connection: ", err.Error())
+		os.Exit(1)
+	}
+
+	connection.Close()
 }
