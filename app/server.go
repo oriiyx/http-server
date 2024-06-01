@@ -115,21 +115,17 @@ func HandleRequest(conn net.Conn) {
 			if len(args) > 2 {
 				if args[1] == "--directory" {
 					dir := os.Args[2]
-					if _, err := os.Stat(dir); err == nil {
-						splitUrlPath := strings.Split(urlPath, "/")
-						wildcard := splitUrlPath[len(splitUrlPath)-1]
+					splitUrlPath := strings.Split(urlPath, "/")
+					wildcard := splitUrlPath[len(splitUrlPath)-1]
 
-						buf := make([]byte, 1024)
-						_, _ = request.Body.Read(buf)
-						err := os.WriteFile(dir+wildcard, buf, 0644)
-						if err != nil {
-							HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
-						}
-
-						HandleConnWriting(conn, "HTTP/1.1 201 OK", "", "")
-					} else {
+					buf := make([]byte, 1024)
+					_, _ = request.Body.Read(buf)
+					writeErr := os.WriteFile(dir+wildcard, buf, 0644)
+					if writeErr != nil {
 						HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
 					}
+
+					HandleConnWriting(conn, "HTTP/1.1 201 OK", "", "")
 				}
 			}
 		}
