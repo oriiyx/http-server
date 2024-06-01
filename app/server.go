@@ -62,49 +62,78 @@ func HandleRequest(conn net.Conn) {
 
 	urlPath := request.URL.Path
 
-	if urlPath == "" || urlPath == "/" {
-		HandleConnWriting(conn, "HTTP/1.1 200 OK", "", "")
-		return
-	}
+	if request.Method == "GET" {
 
-	if strings.Contains(urlPath, "/echo/") {
-		splitUrlPath := strings.Split(urlPath, "/")
-		wildcard := splitUrlPath[len(splitUrlPath)-1]
-		if wildcard == "" {
-			HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+		if urlPath == "" || urlPath == "/" {
+			HandleConnWriting(conn, "HTTP/1.1 200 OK", "", "")
+			return
 		}
-		wildcardLength := strconv.Itoa(len(wildcard))
-		HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
-	}
 
-	if strings.Contains(urlPath, "/user-agent") {
-		userAgent := request.Header.Get("User-Agent")
-		userAgentLength := strconv.Itoa(len(userAgent))
-		HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+userAgentLength+"\r\n", userAgent)
-	}
+		if strings.Contains(urlPath, "/echo/") {
+			splitUrlPath := strings.Split(urlPath, "/")
+			wildcard := splitUrlPath[len(splitUrlPath)-1]
+			if wildcard == "" {
+				HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+			}
+			wildcardLength := strconv.Itoa(len(wildcard))
+			HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
+		}
 
-	if strings.Contains(urlPath, "/files/") {
-		args := os.Args
-		if len(args) > 2 {
-			if args[1] == "--directory" {
-				dir := os.Args[2]
-				if _, err := os.Stat(dir); err == nil {
-					splitUrlPath := strings.Split(urlPath, "/")
-					wildcard := splitUrlPath[len(splitUrlPath)-1]
-					data, err := os.ReadFile(dir + wildcard)
-					if err != nil {
+		if strings.Contains(urlPath, "/user-agent") {
+			userAgent := request.Header.Get("User-Agent")
+			userAgentLength := strconv.Itoa(len(userAgent))
+			HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+userAgentLength+"\r\n", userAgent)
+		}
+
+		if strings.Contains(urlPath, "/files/") {
+			args := os.Args
+			if len(args) > 2 {
+				if args[1] == "--directory" {
+					dir := os.Args[2]
+					if _, err := os.Stat(dir); err == nil {
+						splitUrlPath := strings.Split(urlPath, "/")
+						wildcard := splitUrlPath[len(splitUrlPath)-1]
+						data, err := os.ReadFile(dir + wildcard)
+						if err != nil {
+							HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+						}
+						dataLength := strconv.Itoa(len(data))
+						HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: application/octet-stream\r\nContent-Length: "+dataLength+"\r\n", string(data))
+					} else {
 						HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
 					}
-					dataLength := strconv.Itoa(len(data))
-					HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: application/octet-stream\r\nContent-Length: "+dataLength+"\r\n", string(data))
-				} else {
-					HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+				}
+			}
+		}
+
+		HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+	}
+
+	if request.Method == "POST" {
+		if strings.Contains(urlPath, "/files/") {
+			args := os.Args
+			if len(args) > 2 {
+				if args[1] == "--directory" {
+					dir := os.Args[2]
+					if _, err := os.Stat(dir); err == nil {
+						splitUrlPath := strings.Split(urlPath, "/")
+						wildcard := splitUrlPath[len(splitUrlPath)-1]
+
+						buf := make([]byte, 1024)
+						_, _ = request.Body.Read(buf)
+						err := os.WriteFile(dir+wildcard, buf, 0644)
+						if err != nil {
+							HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+						}
+
+						HandleConnWriting(conn, "HTTP/1.1 201 OK", "", "")
+					} else {
+						HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
+					}
 				}
 			}
 		}
 	}
-
-	HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
 }
 
 func HandleConnWriting(conn net.Conn, status, header, body string) {
