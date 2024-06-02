@@ -83,7 +83,7 @@ func HandleRequest(conn net.Conn) {
 			isCompressed := findIfAcceptsGzip(request)
 			if isCompressed {
 				compressionContent := compressString(wildcard)
-				compressionLength := strconv.Itoa(len(wildcard))
+				compressionLength := strconv.Itoa(len(compressionContent))
 				HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "+compressionLength+"\r\n", compressionContent)
 			} else {
 				HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
