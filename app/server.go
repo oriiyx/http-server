@@ -146,7 +146,7 @@ func HandleRequest(conn net.Conn) {
 func findIfAcceptsGzip(request *http.Request) bool {
 	acceptEncoding := request.Header.Get("Accept-Encoding")
 
-	if acceptEncoding == "gzip" {
+	if strings.Contains(acceptEncoding, "gzip") {
 		return true
 	}
 
