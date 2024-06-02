@@ -150,6 +150,7 @@ func HandleRequest(conn net.Conn) {
 func compressString(wildcard string) string {
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
+	defer zw.Flush()
 
 	_, err := zw.Write([]byte(wildcard))
 	if err != nil {
