@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"fmt"
+	"log"
 	"net/http"
 	"path"
 	"strconv"
 	"strings"
-
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
@@ -80,7 +82,9 @@ func HandleRequest(conn net.Conn) {
 
 			isCompressed := findIfAcceptsGzip(request)
 			if isCompressed {
-				HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
+				compressionContent := compressString(wildcard)
+				compressionLength := strconv.Itoa(len(wildcard))
+				HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "+compressionLength+"\r\n", compressionContent)
 			} else {
 				HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
 			}
@@ -141,6 +145,22 @@ func HandleRequest(conn net.Conn) {
 			}
 		}
 	}
+}
+
+func compressString(wildcard string) string {
+	var buf bytes.Buffer
+	zw := gzip.NewWriter(&buf)
+
+	_, err := zw.Write([]byte(wildcard))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := zw.Close(); err != nil {
+		log.Fatal(err)
+	}
+
+	return buf.String()
 }
 
 func findIfAcceptsGzip(request *http.Request) bool {
