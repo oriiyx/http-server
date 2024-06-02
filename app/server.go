@@ -77,7 +77,13 @@ func HandleRequest(conn net.Conn) {
 				HandleConnWriting(conn, "HTTP/1.1 404 Not Found", "", "")
 			}
 			wildcardLength := strconv.Itoa(len(wildcard))
-			HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
+
+			isCompressed := findIfAcceptsGzip(request)
+			if isCompressed {
+				HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Encoding: gzip\r\nContent-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
+			} else {
+				HandleConnWriting(conn, "HTTP/1.1 200 OK", "Content-Type: text/plain\r\nContent-Length: "+wildcardLength+"\r\n", wildcard)
+			}
 		}
 
 		if strings.Contains(urlPath, "/user-agent") {
@@ -135,6 +141,16 @@ func HandleRequest(conn net.Conn) {
 			}
 		}
 	}
+}
+
+func findIfAcceptsGzip(request *http.Request) bool {
+	acceptEncoding := request.Header.Get("Accept-Encoding")
+
+	if acceptEncoding == "gzip" {
+		return true
+	}
+
+	return false
 }
 
 func EnsureBaseDir(fpath string) error {
